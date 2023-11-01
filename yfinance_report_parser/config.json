@@ -1,0 +1,40 @@
+{
+    "kelly_fraction": 1,
+    "unc_kelly_fraction": 0.15,
+    "max_lookback_years": 3.0,
+    "estimation_mode": ["hist","fixed","custom"],
+    "fixed_annual_risk_free_rate": 0.0290,
+    "fixed_annual_excess_return_rate": 0.02,
+    "use_Ledoit_Wolf": true,
+    "max_position_size": 0.99,
+    "capital": 500000,
+    
+    "strategy_name": "str3",
+    "trade_type": ["sim","real"],
+    "limit_sell_param_abs": 0.015,
+    "holding_rule": 0.6, 
+    "max_symbol_dailyopen": 20,
+    "fixed_replenish_rate": 0.05,
+    "exchange_list": ["sz","sh"],
+    "interval_list": ["daily"],
+    "outputsize_list": ["full","compact"],
+
+    "data_path": "../data/",
+    "fi_list":["INCOME_STATEMENT","BALANCE_SHEET"],
+    "fi_list_yfinance":["income_stmt","quarterly_income_stmt","balance_sheet","quarterly_balance_sheet","cashflow","quarterly_cashflow"],
+    "broker_picked_stock_path":"../data/eastmoney_parser/grpStockReportSummary/stock.xlsx",
+    "yfinance_picked_stock_path":"../data/yfinance_report_parser/grpStockReportSummary/stock.xlsx",
+    "report_url": "https://data.eastmoney.com/report/stock.jshtml",
+    "yfinance_report_url": "https://finance.yahoo.com/research?investment_rating=Bullish",
+    "start_page": 1,
+    "end_page": 50,
+
+    "solvency_ratio_margin": 3,
+    "price_change_margin_lowerbound": -0.01,
+    "price_change_margin_higherbound": 0.15,
+
+    "time_value":{"一周内":"1","一月内":"2","半年内":"3","一年内":"4","两年内":"5"},
+    "time_value_yfinance":["Last Week","Last Month","Last Year"]
+}
+
+
