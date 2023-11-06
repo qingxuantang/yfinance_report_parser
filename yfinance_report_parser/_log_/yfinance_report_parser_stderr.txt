@@ -1,0 +1,15 @@
+Process Process-1:
+Traceback (most recent call last):
+  File "C:\Users\zhoub\.conda\envs\qtapp\lib\multiprocessing\process.py", line 315, in _bootstrap
+    self.run()
+  File "C:\Users\zhoub\.conda\envs\qtapp\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\zhoub\git_repo\yfinance_report_parser\yfinance_report_parser\yfinance_report_parser.py", line 184, in run_async_code
+    loop.run_until_complete(self.main(end_page=end_page))
+  File "C:\Users\zhoub\.conda\envs\qtapp\lib\asyncio\base_events.py", line 647, in run_until_complete
+    return future.result()
+  File "C:\Users\zhoub\git_repo\yfinance_report_parser\yfinance_report_parser\yfinance_report_parser.py", line 77, in main
+    await page.waitForSelector('button[data-field="report_date"][data-value="Last Week"]')
+  File "C:\Users\zhoub\.conda\envs\qtapp\lib\site-packages\pyppeteer\frame_manager.py", line 855, in __await__
+    raise result
+pyppeteer.errors.TimeoutError: Waiting for selector "button[data-field="report_date"][data-value="Last Week"]" failed: timeout 30000ms exceeds.

@@ -1,14 +1,18 @@
 import asyncio
 from pyppeteer import launch
+import pyppeteer.errors
 import pandas as pd
 import os
 from bs4 import BeautifulSoup
 from multiprocessing import Process
 import csv
+import re
 from importlib import reload
 from . import utils
 utils = reload(utils)
 
+filename = re.findall('(.*).py', os.path.basename(__file__)) #仅包括扩展名前的部分
+utils.errorLog(pkg_path=utils.pkg_path,filename=filename)
 
 # Creating the class with full functionality
 class ReportScraper:
@@ -30,14 +34,63 @@ class ReportScraper:
         print('Yahoo Finance research report site is opened.')
         await asyncio.sleep(5)
 
-        # Find the button with data-value="Last Month" within the dropdown menu
+
+        #****************************************
+
+        # xpath method
+        # XPath to find the "Date Range" button which contains the text "Date Range"
+        date_range_button_xpath = "//div[contains(@class, 'Pos(r)') and contains(@class, 'D(ib)') and contains(@class, 'Cur(p)') and contains(., 'Date Range')]"
+        # Find the "Date Range" element to trigger the dropdown using XPath
+        await page.waitForXPath(date_range_button_xpath)
+        button = await page.xpath(date_range_button_xpath)
+        await button[0].click()
+        
+        # css method
+        # Wait for the button to be available using the data-test attribute
+        #await page.waitForSelector('div[data-test="dropdown"]')
+        # Click the button using the data-test attribute
+        #await page.click('div[data-test="dropdown"]')
+        
+        await asyncio.sleep(10)
+        """
+        #await page.waitForSelector('div[data-test="dropdown-dd-menu"]', options={'visible': True})
+        #await page.waitForXPath('//div[@id="dropdown-menu"]', visible=True)
+        await page.waitForSelector('div[data-test="dropdown-dd-menu"]')
+        dropdown_menu_visible = await page.evaluate('''() => {
+            const elem = document.querySelector('#dropdown-menu');
+            if (elem) {
+                const style = window.getComputedStyle(elem);
+                return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+            }
+            return false;
+        }''')
+
+        if dropdown_menu_visible:"""
+
+        
+
+        # The dropdown menu is visible
+        # Click the button with the desired 'data-value'
         time_value = self.time_value_yfinance[1]
-        #button = await page.querySelector('button[data-value="'+ time_value +'"]')
-        button = await page.querySelector('button[data-value="Last Month"]')
-        if button:
-            await button.click()
-        else:
-            print("Couldn't find " + time_value + "!")
+
+        #*************
+        await page.waitForSelector('button[data-field="report_date"][data-value="Last Week"]')
+        await page.click('button[data-field="report_date"][data-value="Last Week"]')
+        await asyncio.sleep(5)
+        print("Date range '" + time_value + "' selected.")
+        #*************
+
+        #await page.click(f'button[data-value="{time_value}"]')
+        #button = await page.querySelector('button[data-value="{time_value}"]')
+        #if button:
+        #    await button.click()
+        #    await asyncio.sleep(5)
+        #    print("Date range '" + time_value + "' selected.")
+        #else:
+        #    print("Couldn't find " + time_value + "!")
+
+        #****************************************
+
 
         pagenumber_range = range(1, end_page+1)
         for pagenumber in pagenumber_range:
