@@ -10,4 +10,4 @@ if __name__ == "__main__":
     config = utils.config
     end_page = config['end_page']
     scraper = new_yfinance_report_parser.ReportScraper()
-    scraper.run()
+    scraper.run(end_page)
