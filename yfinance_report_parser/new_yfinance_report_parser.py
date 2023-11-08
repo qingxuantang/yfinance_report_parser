@@ -41,7 +41,7 @@ class ReportScraper:
         self.time_value_yfinance = self.config['time_value_yfinance'] #0 Last Week,1 Last Month,2 Last Year
 
 
-    async def main(self,end_page):
+    async def main(self):
         try:
             # Corrected instantiation of Chrome with options
             driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
@@ -51,12 +51,12 @@ class ReportScraper:
         
         # Navigate to the page
         time_value = self.time_value_yfinance[0]
-        url = self.config['yfinance_report_url'] + time_value #Accessable only with US IP
+        url = self.config['yfinance_report_url'] + time_value #Accessable only with U.S. IP
         driver.get(url)
         await asyncio.sleep(10)
 
 
-        """[Do not delete]Backup Method In Case of URL Structure Change of finance.yahoo.com
+        """[Do not delete]Backup Method In Case of URL Structure Change on finance.yahoo.com
         #############################
         # Find the button using its XPath and click it
         date_range_button = driver.find_element(By.XPATH, "//div[contains(text(), 'Date Range')]")
@@ -81,26 +81,64 @@ class ReportScraper:
         #############################"""
 
         
+        #**********************************
+        #Calc the total page count with current filters.
+        # Extract the content of the page using selenium
+        content = driver.page_source
+        # Parse the HTML with BeautifulSoup
+        soup = BeautifulSoup(content, 'html.parser')
+
+        # Find the div tag by class and then find the span within it
+        div_class = "D(ib) Va(m) Fw(500) Fz(m) Pt(5px) D(b)--sm"
+        div = soup.find('div', class_=div_class)
+        initial_text = div.find('span').text if div else "Div or span not found"
+        # Use regex to find the pattern "of [number] results" and extract the number
+        match = re.search(r'of (\d+) results', initial_text)
+        # Extract the number from the search result if it exists
+        total_result = match.group(1) if match else "Pattern not found"
+        total_page = -(-int(total_result)//100) #Ceil division: reverted from a floor division
+
+        print(f'Total page count: {total_page}')
+
+
+        # Define the custom expected condition
+        class TextHasChanged:
+            def __init__(self, locator, initial_text):
+                self.locator = locator
+                self.initial_text = initial_text
+
+            def __call__(self, driver):
+                # Find the element
+                element = driver.find_element(*self.locator)
+                # Check if the text has changed from the initial text
+                return element.text != self.initial_text
+        #**********************************
+
+
+
 
         # Finalizing the selenium function by adding data extraction and CSV writing logic
-        for pagenumber in range(end_page + 1):
+        for pagenumber in range(1,total_page + 1):
             print(f'Starting to navigate, currently on page {pagenumber}')
             if pagenumber != 1:
                 # Find the 'Next' button using a more specific XPath
-                button_xpath = "//button[contains(@class, 'Va(m)') and contains(@class, 'C($linkColor)')]/span/span[text()='Next']"
-                # Wait for the 'Next' button to be clickable
-                next_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, button_xpath)))
-                next_button.click()  # Click the button
-                await asyncio.sleep(5)  # Introduce a delay after clicking to allow the page to load
+                next_button = driver.find_element(By.XPATH, "//button[contains(@class, 'Va(m)') and contains(@class, 'C($linkColor)')]/span/span[text()='Next']")
+                next_button.click()
+
+                #***********************************
+                # Locator for the <span> element containing the text
+                locator = (By.XPATH, "//div[contains(@class, 'D(ib)') and contains(@class, 'Va(m)')]/span")
+                # Use WebDriverWait in combination with the custom expected condition
+                wait = WebDriverWait(driver, 10)  # Adjust the timeout as necessary
+                wait.until(TextHasChanged(locator, initial_text))
+                #***********************************
+
+                #await asyncio.sleep(10)  # Introduce a delay after clicking to allow the page to load
             else:
-                await asyncio.sleep(5)  # Delay on the first page
+                await asyncio.sleep(3)  # Delay on the first page
 
             print(f'Page {pagenumber} navigation complete')
             
-            # Extract the content of the page using selenium
-            content = driver.page_source
-            # Parse the HTML using BeautifulSoup
-            soup = BeautifulSoup(content, 'html.parser')
             # Lists to hold the extracted data
             data_list = []
             # Extract table rows
@@ -129,7 +167,8 @@ class ReportScraper:
 
             # Save to CSV
             # Construct the CSV file path
-            csv_path = f"{self.data_path}{self.pkg_path}yahoofinance_{pagenumber}.csv"
+            path = f"{self.data_path}{self.pkg_path}{self.folder_path}"
+            csv_path = f"{path}yahoofinance_{pagenumber}.csv"
             # Write the extracted data to the CSV file
             with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
                 writer = csv.writer(csvfile)
@@ -145,29 +184,28 @@ class ReportScraper:
 
 
         # Merge tables: only merge the latest downloaded tables.
-        path = self.data_path + self.pkg_path + self.folder_path
-        file_used = [f"yahoofinance_{i}.xlsx" for i in range(1,end_page+1)]
+        file_used = [f"yahoofinance_{i}.csv" for i in range(1,total_page+1)]
         
         all_dfs = []
         for file in file_used:
-            df = pd.read_excel(path+file)
+            df = pd.read_csv(path+file)
             df = df.drop(df.index[0])  # Get rid of the first row
             all_dfs.append(df)
 
         final_df = pd.concat(all_dfs, ignore_index=True)
-        final_df.to_excel(os.path.join(path, "stock.xlsx"), index=False)
+        final_df.to_excel(os.path.join(path, "yahoofinance_stock.xlsx"), index=False)
         print('Table merge complete')
 
 
 
 
-    def run_async_code(self,end_page):
+    def run_async_code(self):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(self.main(end_page=end_page))
+            loop.run_until_complete(self.main())
 
     
-    def run(self,end_page):
-        process = Process(target=self.run_async_code,args=(end_page,))
+    def run(self):
+        process = Process(target=self.run_async_code)
         process.start()
         process.join()
